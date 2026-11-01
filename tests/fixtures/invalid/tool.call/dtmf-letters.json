@@ -1,0 +1,9 @@
+{
+  "type": "tool.call",
+  "session_id": "vs_7Hq2Lm9xQa",
+  "call_ref": "t1",
+  "name": "send_dtmf",
+  "arguments": {
+    "digits": "abc"
+  }
+}

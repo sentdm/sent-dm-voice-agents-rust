@@ -1,0 +1,17 @@
+{
+  "type": "session.start",
+  "session_id": "vs_7Hq2Lm9xQa",
+  "call_id": "1a2b3c4d-5e6f",
+  "agent_id": "agent_01JBX6Y3NHZ9V3K7T2Q5R8M4PA",
+  "direction": "inbound",
+  "from": {
+    "kind": "number",
+    "value": "+14155550100"
+  },
+  "to": {
+    "kind": "number",
+    "value": "+14155550199"
+  },
+  "session_type": "text",
+  "started_at": "2026-10-23T12:00:00Z"
+}

@@ -1,0 +1,9 @@
+{
+  "type": "error",
+  "error": {
+    "code": "frame_not_allowed",
+    "message": "agent.say is not allowed in an audio session."
+  },
+  "session_id": "vs_7Hq2Lm9xQa",
+  "frame_type": "agent.say"
+}

@@ -1,0 +1,5 @@
+{
+  "type": "connection.ready",
+  "protocol_version": "0.1.0",
+  "heartbeat_interval_ms": 5000
+}

@@ -1,0 +1,12 @@
+{
+  "type": "tool.call",
+  "session_id": "vs_7Hq2Lm9xQa",
+  "call_ref": "t1",
+  "name": "transfer",
+  "arguments": {
+    "to": {
+      "kind": "user",
+      "value": "support-desk"
+    }
+  }
+}

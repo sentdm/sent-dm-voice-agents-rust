@@ -1,0 +1,9 @@
+{
+  "type": "session.resumed",
+  "session_id": "vs_7Hq2Lm9xQa",
+  "received": 6,
+  "resume": {
+    "token": "vsr_Hn5tW1qGz8kXc4PmR7vB2sLf0J",
+    "window_ms": 15000
+  }
+}
