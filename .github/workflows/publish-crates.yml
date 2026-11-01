@@ -74,7 +74,8 @@ jobs:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN || steps.auth.outputs.token }}
         run: |
           version="$(sed -n 's/^version = "\([^"]*\)".*/\1/p' Cargo.toml | head -1)"
-          if cargo info "sentdm-voice-agents@$version" >/dev/null 2>&1; then
+          # Asked of the registry, not of cargo: inside the crate, `cargo info` answers from the working copy.
+          if curl -fsS -o /dev/null -A "sent-dm-voice-agents-rust publish (support@sent.dm)" "https://crates.io/api/v1/crates/sentdm-voice-agents/$version"; then
             echo "sentdm-voice-agents $version is already published"
             exit 0
           fi
