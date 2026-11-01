@@ -7,8 +7,8 @@
 
 use crate::audio::{samples_of, stream_of, HEADER_BYTES};
 use crate::frames::{
-    self, ConnectionReady, ErrorFrame, Frame, Pong, SessionEnd, SessionResumed, SessionStart, ToolResult, UnknownFrame,
-    UserSaid, CONNECT_PATH, HOST, SUBPROTOCOL,
+    self, ConnectionReady, ErrorFrame, Frame, Pong, SessionEnd, SessionResumed, SessionStart,
+    ToolResult, UnknownFrame, UserSaid, CONNECT_PATH, HOST, SUBPROTOCOL,
 };
 use crate::session::{Item, Sender, Session};
 use futures_util::{FutureExt, SinkExt, StreamExt};
@@ -80,7 +80,11 @@ pub trait Handler: Send + Sync + 'static {
     }
 
     /// Text sessions: the caller said something. With `correction` true it replaces the previous one.
-    fn on_user_said(&self, session: Arc<Session>, said: UserSaid) -> impl Future<Output = ()> + Send {
+    fn on_user_said(
+        &self,
+        session: Arc<Session>,
+        said: UserSaid,
+    ) -> impl Future<Output = ()> + Send {
         let _ = (session, said);
         async {}
     }
@@ -92,19 +96,31 @@ pub trait Handler: Send + Sync + 'static {
     }
 
     /// Sent answered a tool call. The call's waiting `tool` gets the same result.
-    fn on_tool_result(&self, session: Arc<Session>, result: ToolResult) -> impl Future<Output = ()> + Send {
+    fn on_tool_result(
+        &self,
+        session: Arc<Session>,
+        result: ToolResult,
+    ) -> impl Future<Output = ()> + Send {
         let _ = (session, result);
         async {}
     }
 
     /// A session frame this SDK version does not know. It was counted; nothing else is needed.
-    fn on_frame(&self, session: Arc<Session>, frame: UnknownFrame) -> impl Future<Output = ()> + Send {
+    fn on_frame(
+        &self,
+        session: Arc<Session>,
+        frame: UnknownFrame,
+    ) -> impl Future<Output = ()> + Send {
         let _ = (session, frame);
         async {}
     }
 
     /// The call left the agent. `end.reason` says why.
-    fn on_session_end(&self, session: Arc<Session>, end: SessionEnd) -> impl Future<Output = ()> + Send {
+    fn on_session_end(
+        &self,
+        session: Arc<Session>,
+        end: SessionEnd,
+    ) -> impl Future<Output = ()> + Send {
         let _ = (session, end);
         async {}
     }
@@ -169,7 +185,9 @@ struct Connection {
 
 impl Connection {
     fn state(&self) -> MutexGuard<'_, ConnState> {
-        self.state.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+        self.state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 }
 
@@ -257,14 +275,16 @@ impl<H: Handler> Agent<H> {
             let interrupt = tokio::signal::ctrl_c();
             #[cfg(unix)]
             {
-                let mut terminate = match tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate()) {
-                    Ok(signal) => signal,
-                    Err(_) => {
-                        let _ = interrupt.await;
-                        Inner::stop(&inner);
-                        return;
-                    }
-                };
+                let mut terminate =
+                    match tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+                    {
+                        Ok(signal) => signal,
+                        Err(_) => {
+                            let _ = interrupt.await;
+                            Inner::stop(&inner);
+                            return;
+                        }
+                    };
                 tokio::select! {
                     _ = interrupt => {}
                     _ = terminate.recv() => {}
@@ -293,7 +313,9 @@ impl<H: Handler> Agent<H> {
 
 impl<H: Handler> Inner<H> {
     fn state(&self) -> MutexGuard<'_, State> {
-        self.state.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+        self.state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
     fn stop(inner: &Arc<Inner<H>>) {
@@ -358,8 +380,15 @@ impl<H: Handler> Inner<H> {
                 }
             }
         }
-        let separator = if inner.options.url.contains('?') { '&' } else { '?' };
-        let url = format!("{}{separator}agent_id={}", inner.options.url, inner.options.agent_id);
+        let separator = if inner.options.url.contains('?') {
+            '&'
+        } else {
+            '?'
+        };
+        let url = format!(
+            "{}{separator}agent_id={}",
+            inner.options.url, inner.options.agent_id
+        );
         let mut request = match url.as_str().into_client_request() {
             Ok(request) => request,
             Err(e) => {
@@ -375,26 +404,33 @@ impl<H: Handler> Inner<H> {
                 return;
             }
         };
-        let authorization = match HeaderValue::from_str(&format!("Bearer {}", inner.options.api_key)) {
-            Ok(value) => value,
-            Err(_) => {
-                Inner::finish(
-                    &inner,
-                    Refused {
-                        status: 0,
-                        reason: "the API key is not a header value".into(),
-                    },
-                );
-                Inner::closed(&inner, &conn);
-                return;
-            }
-        };
+        let authorization =
+            match HeaderValue::from_str(&format!("Bearer {}", inner.options.api_key)) {
+                Ok(value) => value,
+                Err(_) => {
+                    Inner::finish(
+                        &inner,
+                        Refused {
+                            status: 0,
+                            reason: "the API key is not a header value".into(),
+                        },
+                    );
+                    Inner::closed(&inner, &conn);
+                    return;
+                }
+            };
         request.headers_mut().insert("Authorization", authorization);
-        request
-            .headers_mut()
-            .insert("Sec-WebSocket-Protocol", HeaderValue::from_static(SUBPROTOCOL));
+        request.headers_mut().insert(
+            "Sec-WebSocket-Protocol",
+            HeaderValue::from_static(SUBPROTOCOL),
+        );
         let host = request.uri().host().unwrap_or("").to_string();
-        let stream = match tokio::time::timeout(HANDSHAKE_TIMEOUT, tokio_tungstenite::connect_async(request)).await {
+        let stream = match tokio::time::timeout(
+            HANDSHAKE_TIMEOUT,
+            tokio_tungstenite::connect_async(request),
+        )
+        .await
+        {
             Err(_) => {
                 warn!("the handshake timed out");
                 Inner::closed(&inner, &conn);
@@ -535,7 +571,11 @@ impl<H: Handler> Inner<H> {
             let pending = state
                 .pending
                 .drain(..)
-                .filter(|session| live.live.get(&session.id).is_some_and(|s| Arc::ptr_eq(s, session)))
+                .filter(|session| {
+                    live.live
+                        .get(&session.id)
+                        .is_some_and(|s| Arc::ptr_eq(s, session))
+                })
                 .collect();
             pending
         };
@@ -559,7 +599,9 @@ impl<H: Handler> Inner<H> {
                 other.state().sessions.remove(&session.id);
             }
         }
-        conn.state().sessions.insert(session.id.clone(), session.clone());
+        conn.state()
+            .sessions
+            .insert(session.id.clone(), session.clone());
         session.move_to(conn.clone());
         if let Some(resume) = session.resume_frame() {
             if let Ok(data) = frames::encode_to_string(&Frame::SessionResume(resume)) {
@@ -585,8 +627,13 @@ impl<H: Handler> Inner<H> {
 
     fn start(inner: &Arc<Inner<H>>, conn: &Arc<Connection>, frame: SessionStart) {
         let (session, items) = Session::new(frame, conn.clone());
-        inner.state().live.insert(session.id.clone(), session.clone());
-        conn.state().sessions.insert(session.id.clone(), session.clone());
+        inner
+            .state()
+            .live
+            .insert(session.id.clone(), session.clone());
+        conn.state()
+            .sessions
+            .insert(session.id.clone(), session.clone());
         info!(
             session = session.id,
             session_type = session.session_type,
@@ -598,7 +645,11 @@ impl<H: Handler> Inner<H> {
     }
 
     fn session_frame(inner: &Arc<Inner<H>>, conn: &Arc<Connection>, frame: Frame) {
-        let session = conn.state().sessions.get(frame.session_id().unwrap_or("")).cloned();
+        let session = conn
+            .state()
+            .sessions
+            .get(frame.session_id().unwrap_or(""))
+            .cloned();
         // A session that moved to another connection is read there: Sent replays what this one did not deliver.
         let Some(session) = session else {
             return;
@@ -647,9 +698,16 @@ impl<H: Handler> Inner<H> {
     /// An error is uncounted, as Counting frames in docs/protocol.md says. Only one that refuses a
     /// session.resume changes the session's fate; any other is the handler's to read.
     fn failed(inner: &Arc<Inner<H>>, conn: &Arc<Connection>, frame: &ErrorFrame) {
-        warn!(code = frame.error.code, message = frame.error.message, "error");
+        warn!(
+            code = frame.error.code,
+            message = frame.error.message,
+            "error"
+        );
         let about_resume = frame.frame_type.as_deref() == Some("session.resume")
-            || matches!(frame.error.code.as_str(), "resume_failed" | "connection_full");
+            || matches!(
+                frame.error.code.as_str(),
+                "resume_failed" | "connection_full"
+            );
         let Some(session_id) = frame.session_id.as_ref().filter(|_| about_resume) else {
             return;
         };
@@ -699,10 +757,13 @@ impl<H: Handler> Inner<H> {
                 return;
             }
             let queued = |session: &Arc<Session>| {
-                state
-                    .connections
-                    .iter()
-                    .any(|other| other.state().pending.iter().any(|s| Arc::ptr_eq(s, session)))
+                state.connections.iter().any(|other| {
+                    other
+                        .state()
+                        .pending
+                        .iter()
+                        .any(|s| Arc::ptr_eq(s, session))
+                })
             };
             let mut movable = Vec::new();
             let conn_state = conn.state();
@@ -725,13 +786,22 @@ impl<H: Handler> Inner<H> {
             let mut pending: Vec<Arc<Session>> = conn_state
                 .pending
                 .iter()
-                .filter(|session| state.live.get(&session.id).is_some_and(|s| Arc::ptr_eq(s, session)))
+                .filter(|session| {
+                    state
+                        .live
+                        .get(&session.id)
+                        .is_some_and(|s| Arc::ptr_eq(s, session))
+                })
                 .cloned()
                 .collect();
             drop(conn_state);
             pending.extend(movable);
             let drained = conn.state().draining && pending.is_empty();
-            let delay = if drained { Duration::ZERO } else { backoff(&mut state) };
+            let delay = if drained {
+                Duration::ZERO
+            } else {
+                backoff(&mut state)
+            };
             (pending, drained, delay)
         };
         // Reported whether or not a reconnect follows: a drained connection's leftovers are lost too.
@@ -751,7 +821,11 @@ impl<H: Handler> Inner<H> {
 
     // ----- the session's task -----
 
-    async fn run_session(inner: Arc<Inner<H>>, session: Arc<Session>, mut items: mpsc::UnboundedReceiver<Item>) {
+    async fn run_session(
+        inner: Arc<Inner<H>>,
+        session: Arc<Session>,
+        mut items: mpsc::UnboundedReceiver<Item>,
+    ) {
         safely(inner.handler.on_session_start(session.clone())).await;
         while let Some(item) = items.recv().await {
             match item {
@@ -759,15 +833,28 @@ impl<H: Handler> Inner<H> {
                     safely(inner.handler.on_session_lost(session.clone())).await;
                     return;
                 }
-                Item::Audio(data) => safely(inner.handler.on_audio(session.clone(), samples_of(&data).to_vec())).await,
+                Item::Audio(data) => {
+                    safely(
+                        inner
+                            .handler
+                            .on_audio(session.clone(), samples_of(&data).to_vec()),
+                    )
+                    .await
+                }
                 Item::Frame(frame) => match *frame {
-                    Frame::UserSaid(said) => safely(inner.handler.on_user_said(session.clone(), said)).await,
-                    Frame::ToolResult(result) => safely(inner.handler.on_tool_result(session.clone(), result)).await,
+                    Frame::UserSaid(said) => {
+                        safely(inner.handler.on_user_said(session.clone(), said)).await
+                    }
+                    Frame::ToolResult(result) => {
+                        safely(inner.handler.on_tool_result(session.clone(), result)).await
+                    }
                     Frame::SessionEnd(end) => {
                         safely(inner.handler.on_session_end(session.clone(), end)).await;
                         return;
                     }
-                    Frame::Unknown(unknown) => safely(inner.handler.on_frame(session.clone(), unknown)).await,
+                    Frame::Unknown(unknown) => {
+                        safely(inner.handler.on_frame(session.clone(), unknown)).await
+                    }
                     _ => {}
                 },
             }
@@ -837,8 +924,14 @@ mod tests {
         let (session, items) = Session::new(start(""), conn.clone());
         std::mem::forget(items);
         session.move_to(conn.clone());
-        agent.inner.state().live.insert(session.id.clone(), session.clone());
-        conn.state().sessions.insert(session.id.clone(), session.clone());
+        agent
+            .inner
+            .state()
+            .live
+            .insert(session.id.clone(), session.clone());
+        conn.state()
+            .sessions
+            .insert(session.id.clone(), session.clone());
         session
     }
 
@@ -851,7 +944,9 @@ mod tests {
             &conn,
             &error_frame(Some("agent.say"), "frame_not_allowed"),
         );
-        assert!(session.resuming() && conn.state().sessions.contains_key("vs_1") && !session.lost());
+        assert!(
+            session.resuming() && conn.state().sessions.contains_key("vs_1") && !session.lost()
+        );
         Inner::failed(
             &agent.inner,
             &conn,
@@ -877,7 +972,11 @@ mod tests {
             .cloned()
             .collect();
         assert_eq!(opened.len(), 1);
-        assert!(opened[0].state().pending.iter().any(|s| Arc::ptr_eq(s, &session)));
+        assert!(opened[0]
+            .state()
+            .pending
+            .iter()
+            .any(|s| Arc::ptr_eq(s, &session)));
         agent.stop();
     }
 
@@ -930,7 +1029,10 @@ mod tests {
         Inner::lost(&agent.inner, &session);
         agent.inner.handler.done.notified().await;
         tokio::task::yield_now().await;
-        assert_eq!(*agent.inner.handler.seen.lock().await, ["tool failed", "lost"]);
+        assert_eq!(
+            *agent.inner.handler.seen.lock().await,
+            ["tool failed", "lost"]
+        );
         assert!(agent.sessions().is_empty());
         agent.stop();
     }

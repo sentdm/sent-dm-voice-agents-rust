@@ -6,7 +6,8 @@ use sentdm_voice_agents::{Agent, Options};
 
 #[tokio::main]
 async fn main() {
-    let url = std::env::var("SENT_CONFORMANCE_URL").unwrap_or_else(|_| "ws://localhost:8765/v1/agents/connect".into());
+    let url = std::env::var("SENT_CONFORMANCE_URL")
+        .unwrap_or_else(|_| "ws://localhost:8765/v1/agents/connect".into());
     let agent = Agent::new(
         Options::new("conformance", "agent_conformance").with_url(url),
         ConformanceHandler,

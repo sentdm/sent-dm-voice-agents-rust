@@ -6,8 +6,8 @@
 
 use crate::audio::audio_frame;
 use crate::frames::{
-    self, AgentClear, AgentSay, Frame, FrameError, Party, SessionEnd, SessionResume, SessionResumed, SessionStart,
-    ToolCall, ToolResult, RETAINED_FRAMES, UNCOUNTED,
+    self, AgentClear, AgentSay, Frame, FrameError, Party, SessionEnd, SessionResume,
+    SessionResumed, SessionStart, ToolCall, ToolResult, RETAINED_FRAMES, UNCOUNTED,
 };
 use serde_json::{Map, Value};
 use std::collections::HashMap;
@@ -99,12 +99,19 @@ pub struct Session {
 
 impl fmt::Debug for Session {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Session({}, {}, {})", self.id, self.session_type, self.direction)
+        write!(
+            f,
+            "Session({}, {}, {})",
+            self.id, self.session_type, self.direction
+        )
     }
 }
 
 impl Session {
-    pub(crate) fn new(start: SessionStart, conn: Arc<dyn Sender>) -> (Arc<Session>, mpsc::UnboundedReceiver<Item>) {
+    pub(crate) fn new(
+        start: SessionStart,
+        conn: Arc<dyn Sender>,
+    ) -> (Arc<Session>, mpsc::UnboundedReceiver<Item>) {
         let (inbox, items) = mpsc::unbounded_channel();
         let session = Session {
             id: start.session_id.clone(),
@@ -117,7 +124,11 @@ impl Session {
             language: start.language.clone(),
             context: start.context.clone().unwrap_or_default(),
             started_at: start.started_at.clone(),
-            sample_rate: start.audio.as_ref().and_then(|a| a.sample_rate).unwrap_or(16000) as u32,
+            sample_rate: start
+                .audio
+                .as_ref()
+                .and_then(|a| a.sample_rate)
+                .unwrap_or(16000) as u32,
             state: Mutex::new(State {
                 stream: start.audio.as_ref().map(|a| a.stream as u16),
                 token: start.resume.as_ref().map(|r| r.token.clone()),
@@ -139,7 +150,9 @@ impl Session {
     }
 
     fn state(&self) -> MutexGuard<'_, State> {
-        self.state.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+        self.state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
     // ----- what the agent reads about the call -----
@@ -202,7 +215,12 @@ impl Session {
     /// Text sessions: speak `text`, in pieces when `last` is `Some(false)`, finished by a piece with
     /// `Some(true)`; the pieces are spoken as one utterance. `interruptible` is whether the caller speaking stops
     /// this speech.
-    pub fn say_with(&self, text: &str, last: Option<bool>, interruptible: Option<bool>) -> Result<(), Error> {
+    pub fn say_with(
+        &self,
+        text: &str,
+        last: Option<bool>,
+        interruptible: Option<bool>,
+    ) -> Result<(), Error> {
         self.send(Frame::AgentSay(AgentSay {
             session_id: self.id.clone(),
             text: text.to_string(),
@@ -280,7 +298,11 @@ impl Session {
 
     /// Call a tool by name and wait for its tool.result. Fails with [`Error::SessionEnded`] if the session ends
     /// first.
-    pub async fn tool(&self, name: &str, arguments: Option<Map<String, Value>>) -> Result<ToolResult, Error> {
+    pub async fn tool(
+        &self,
+        name: &str,
+        arguments: Option<Map<String, Value>>,
+    ) -> Result<ToolResult, Error> {
         let (answer, waiting) = oneshot::channel();
         let call_ref = {
             let mut state = self.state();
@@ -505,7 +527,9 @@ pub(crate) mod tests {
     fn counts_both_ways_and_keeps_the_latest_frames() {
         let (s, r) = session("");
         assert!(s.resumable() && s.received() == 0 && s.sent() == 0);
-        s.read(&decode(r#"{"type":"user.said","session_id":"vs_1","text":"hi"}"#));
+        s.read(&decode(
+            r#"{"type":"user.said","session_id":"vs_1","text":"hi"}"#,
+        ));
         s.read(&decode(
             r#"{"type":"session.resumed","session_id":"vs_1","received":0}"#,
         ));
@@ -590,9 +614,9 @@ pub(crate) mod tests {
         while s.state().pending.is_empty() {
             tokio::task::yield_now().await;
         }
-        if let Frame::SessionEnd(end) =
-            decode(r#"{"type":"session.end","session_id":"vs_1","reason":"caller_hung_up","duration_ms":10}"#)
-        {
+        if let Frame::SessionEnd(end) = decode(
+            r#"{"type":"session.end","session_id":"vs_1","reason":"caller_hung_up","duration_ms":10}"#,
+        ) {
             s.finish(end);
         }
         assert_eq!(waiting.await.unwrap(), Err(Error::SessionEnded));
@@ -651,9 +675,9 @@ pub(crate) mod tests {
         s.send_audio(&[0u8; 640]).unwrap();
         assert!(r.audio.lock().unwrap().is_empty());
         s.state().resuming = false;
-        if let Frame::SessionEnd(end) =
-            decode(r#"{"type":"session.end","session_id":"vs_1","reason":"caller_hung_up","duration_ms":10}"#)
-        {
+        if let Frame::SessionEnd(end) = decode(
+            r#"{"type":"session.end","session_id":"vs_1","reason":"caller_hung_up","duration_ms":10}"#,
+        ) {
             s.finish(end);
         }
         assert_eq!(s.send_audio(&[0u8; 640]), Err(Error::SessionEnded));
@@ -678,7 +702,9 @@ pub(crate) mod tests {
     #[test]
     fn unknown_session_frames_count_and_errors_do_not() {
         let (s, _r) = session("");
-        s.read(&decode(r#"{"type":"session.note","session_id":"vs_1","x":1}"#));
+        s.read(&decode(
+            r#"{"type":"session.note","session_id":"vs_1","x":1}"#,
+        ));
         s.read(&decode(
             r#"{"type":"error","session_id":"vs_1","error":{"code":"frame_not_allowed","message":"no"}}"#,
         ));

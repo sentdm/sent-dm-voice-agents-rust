@@ -14,7 +14,12 @@ fn fixtures(kind: &str) -> Vec<PathBuf> {
         .unwrap_or_else(|e| panic!("no {kind} fixtures at {}: {e}", root.display()))
         .flatten()
         .filter(|dir| dir.path().is_dir())
-        .flat_map(|dir| fs::read_dir(dir.path()).unwrap().flatten().map(|f| f.path()))
+        .flat_map(|dir| {
+            fs::read_dir(dir.path())
+                .unwrap()
+                .flatten()
+                .map(|f| f.path())
+        })
         .filter(|path| path.extension().is_some_and(|e| e == "json"))
         .collect();
     files.sort();
@@ -26,7 +31,8 @@ fn fixtures(kind: &str) -> Vec<PathBuf> {
 fn valid_frames_round_trip() {
     for file in fixtures("valid") {
         let data = fs::read_to_string(&file).unwrap();
-        let frame = frames::decode(&data).unwrap_or_else(|e| panic!("{}: refused: {e}", file.display()));
+        let frame =
+            frames::decode(&data).unwrap_or_else(|e| panic!("{}: refused: {e}", file.display()));
         assert!(
             !matches!(frame, Frame::Unknown(_)),
             "{}: decoded as unknown",
@@ -34,9 +40,15 @@ fn valid_frames_round_trip() {
         );
         let original: Value = serde_json::from_str(&data).unwrap();
         assert_eq!(frame.frame_type(), original["type"], "{}", file.display());
-        let again = frames::encode(&frame).unwrap_or_else(|e| panic!("{}: encode: {e}", file.display()));
+        let again =
+            frames::encode(&frame).unwrap_or_else(|e| panic!("{}: encode: {e}", file.display()));
         for (key, value) in original.as_object().unwrap() {
-            assert_eq!(&again[key], value, "{}: {key} changed on the way back", file.display());
+            assert_eq!(
+                &again[key],
+                value,
+                "{}: {key} changed on the way back",
+                file.display()
+            );
         }
         let decoded = frames::decode_value(again.clone()).unwrap();
         assert_eq!(
@@ -70,12 +82,16 @@ fn unknown_frames_and_fields_pass() {
         frames::encode_to_string(&frame).unwrap(),
         r#"{"type":"session.note","session_id":"vs_1","x":1}"#
     );
-    match frames::decode(r#"{"type":"user.said","session_id":"vs_1","text":"hi","mood":"good"}"#).unwrap() {
+    match frames::decode(r#"{"type":"user.said","session_id":"vs_1","text":"hi","mood":"good"}"#)
+        .unwrap()
+    {
         Frame::UserSaid(said) => assert!(!said.correction),
         other => panic!("{other:?}"),
     }
-    match frames::decode(r#"{"type":"session.end","session_id":"vs_1","reason":"added_later","duration_ms":1}"#)
-        .unwrap()
+    match frames::decode(
+        r#"{"type":"session.end","session_id":"vs_1","reason":"added_later","duration_ms":1}"#,
+    )
+    .unwrap()
     {
         Frame::SessionEnd(end) => assert_eq!(end.reason, "added_later"),
         other => panic!("{other:?}"),

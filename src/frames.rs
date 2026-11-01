@@ -502,7 +502,13 @@ pub const FROM_SENT: &[&str] = &[
     "session.end",
     "session.resumed",
 ];
-pub const FROM_AGENT: &[&str] = &["agent.say", "tool.call", "agent.clear", "session.resume", "pong"];
+pub const FROM_AGENT: &[&str] = &[
+    "agent.say",
+    "tool.call",
+    "agent.clear",
+    "session.resume",
+    "pong",
+];
 /// Frames that belong to a session: they carry session_id.
 pub const SESSION_SCOPED: &[&str] = &[
     "session.start",
@@ -517,7 +523,13 @@ pub const SESSION_SCOPED: &[&str] = &[
 ];
 /// Frames that do not count towards `received`, whatever they carry; every other frame with a session_id
 /// counts, also one of an unknown type.
-pub const UNCOUNTED: &[&str] = &["error", "session.start", "session.resumed", "session.resume", "audio"];
+pub const UNCOUNTED: &[&str] = &[
+    "error",
+    "session.start",
+    "session.resumed",
+    "session.resume",
+    "audio",
+];
 
 /// Which session types allow a session frame.
 pub fn session_types(frame_type: &str) -> Option<&'static [&'static str]> {
@@ -575,103 +587,127 @@ pub fn decode_value(value: Value) -> Result<Frame, FrameError> {
         "connection.ready" => {
             check_connection_ready(Some(&value), &kind)?;
             let mut frame: ConnectionReady =
-                serde_json::from_value(value).map_err(|e| FrameError { message: e.to_string() })?;
+                serde_json::from_value(value).map_err(|e| FrameError {
+                    message: e.to_string(),
+                })?;
             let _ = &mut frame;
             Ok(Frame::ConnectionReady(frame))
         }
         "connection.draining" => {
             check_connection_draining(Some(&value), &kind)?;
             let mut frame: ConnectionDraining =
-                serde_json::from_value(value).map_err(|e| FrameError { message: e.to_string() })?;
+                serde_json::from_value(value).map_err(|e| FrameError {
+                    message: e.to_string(),
+                })?;
             let _ = &mut frame;
             Ok(Frame::ConnectionDraining(frame))
         }
         "ping" => {
             check_ping(Some(&value), &kind)?;
-            let mut frame: Ping = serde_json::from_value(value).map_err(|e| FrameError { message: e.to_string() })?;
+            let mut frame: Ping = serde_json::from_value(value).map_err(|e| FrameError {
+                message: e.to_string(),
+            })?;
             let _ = &mut frame;
             Ok(Frame::Ping(frame))
         }
         "error" => {
             check_error_frame(Some(&value), &kind)?;
-            let mut frame: ErrorFrame =
-                serde_json::from_value(value).map_err(|e| FrameError { message: e.to_string() })?;
+            let mut frame: ErrorFrame = serde_json::from_value(value).map_err(|e| FrameError {
+                message: e.to_string(),
+            })?;
             let _ = &mut frame;
             Ok(Frame::ErrorFrame(frame))
         }
         "session.start" => {
             check_session_start(Some(&value), &kind)?;
             let mut frame: SessionStart =
-                serde_json::from_value(value).map_err(|e| FrameError { message: e.to_string() })?;
+                serde_json::from_value(value).map_err(|e| FrameError {
+                    message: e.to_string(),
+                })?;
             let _ = &mut frame;
             Ok(Frame::SessionStart(frame))
         }
         "user.said" => {
             check_user_said(Some(&value), &kind)?;
-            let mut frame: UserSaid =
-                serde_json::from_value(value).map_err(|e| FrameError { message: e.to_string() })?;
+            let mut frame: UserSaid = serde_json::from_value(value).map_err(|e| FrameError {
+                message: e.to_string(),
+            })?;
             let _ = &mut frame;
             Ok(Frame::UserSaid(frame))
         }
         "tool.result" => {
             check_tool_result(Some(&value), &kind)?;
-            let mut frame: ToolResult =
-                serde_json::from_value(value).map_err(|e| FrameError { message: e.to_string() })?;
+            let mut frame: ToolResult = serde_json::from_value(value).map_err(|e| FrameError {
+                message: e.to_string(),
+            })?;
             let _ = &mut frame;
             Ok(Frame::ToolResult(frame))
         }
         "session.end" => {
             check_session_end(Some(&value), &kind)?;
-            let mut frame: SessionEnd =
-                serde_json::from_value(value).map_err(|e| FrameError { message: e.to_string() })?;
+            let mut frame: SessionEnd = serde_json::from_value(value).map_err(|e| FrameError {
+                message: e.to_string(),
+            })?;
             let _ = &mut frame;
             Ok(Frame::SessionEnd(frame))
         }
         "session.resumed" => {
             check_session_resumed(Some(&value), &kind)?;
             let mut frame: SessionResumed =
-                serde_json::from_value(value).map_err(|e| FrameError { message: e.to_string() })?;
+                serde_json::from_value(value).map_err(|e| FrameError {
+                    message: e.to_string(),
+                })?;
             let _ = &mut frame;
             Ok(Frame::SessionResumed(frame))
         }
         "agent.say" => {
             check_agent_say(Some(&value), &kind)?;
-            let mut frame: AgentSay =
-                serde_json::from_value(value).map_err(|e| FrameError { message: e.to_string() })?;
+            let mut frame: AgentSay = serde_json::from_value(value).map_err(|e| FrameError {
+                message: e.to_string(),
+            })?;
             frame.interruptible.get_or_insert(true);
             frame.last.get_or_insert(true);
             Ok(Frame::AgentSay(frame))
         }
         "tool.call" => {
             check_tool_call(Some(&value), &kind)?;
-            let mut frame: ToolCall =
-                serde_json::from_value(value).map_err(|e| FrameError { message: e.to_string() })?;
+            let mut frame: ToolCall = serde_json::from_value(value).map_err(|e| FrameError {
+                message: e.to_string(),
+            })?;
             let _ = &mut frame;
             Ok(Frame::ToolCall(frame))
         }
         "agent.clear" => {
             check_agent_clear(Some(&value), &kind)?;
-            let mut frame: AgentClear =
-                serde_json::from_value(value).map_err(|e| FrameError { message: e.to_string() })?;
+            let mut frame: AgentClear = serde_json::from_value(value).map_err(|e| FrameError {
+                message: e.to_string(),
+            })?;
             let _ = &mut frame;
             Ok(Frame::AgentClear(frame))
         }
         "session.resume" => {
             check_session_resume(Some(&value), &kind)?;
             let mut frame: SessionResume =
-                serde_json::from_value(value).map_err(|e| FrameError { message: e.to_string() })?;
+                serde_json::from_value(value).map_err(|e| FrameError {
+                    message: e.to_string(),
+                })?;
             let _ = &mut frame;
             Ok(Frame::SessionResume(frame))
         }
         "pong" => {
             check_pong(Some(&value), &kind)?;
-            let mut frame: Pong = serde_json::from_value(value).map_err(|e| FrameError { message: e.to_string() })?;
+            let mut frame: Pong = serde_json::from_value(value).map_err(|e| FrameError {
+                message: e.to_string(),
+            })?;
             let _ = &mut frame;
             Ok(Frame::Pong(frame))
         }
         _ => {
             let fields = obj.clone();
-            let session_id = fields.get("session_id").and_then(Value::as_str).map(str::to_string);
+            let session_id = fields
+                .get("session_id")
+                .and_then(Value::as_str)
+                .map(str::to_string);
             Ok(Frame::Unknown(UnknownFrame {
                 frame_type: kind,
                 session_id,
@@ -702,7 +738,9 @@ pub fn encode(frame: &Frame) -> Result<Value, FrameError> {
         Frame::Pong(f) => serde_json::to_value(f),
         Frame::Unknown(f) => Ok(Value::Object(f.fields.clone())),
     };
-    let body = body.map_err(|e| FrameError { message: e.to_string() })?;
+    let body = body.map_err(|e| FrameError {
+        message: e.to_string(),
+    })?;
     if let Value::Object(fields) = body {
         for (key, value) in fields {
             if key != "type" {
@@ -713,7 +751,9 @@ pub fn encode(frame: &Frame) -> Result<Value, FrameError> {
     let value = Value::Object(data);
     match frame {
         Frame::ConnectionReady(_) => check_connection_ready(Some(&value), ConnectionReady::TYPE)?,
-        Frame::ConnectionDraining(_) => check_connection_draining(Some(&value), ConnectionDraining::TYPE)?,
+        Frame::ConnectionDraining(_) => {
+            check_connection_draining(Some(&value), ConnectionDraining::TYPE)?
+        }
         Frame::Ping(_) => check_ping(Some(&value), Ping::TYPE)?,
         Frame::ErrorFrame(_) => check_error_frame(Some(&value), ErrorFrame::TYPE)?,
         Frame::SessionStart(_) => check_session_start(Some(&value), SessionStart::TYPE)?,
@@ -747,7 +787,8 @@ fn check_party(d: Option<&Value>, path: &str) -> Result<(), FrameError> {
         let path = &format!("{}.kind", path);
         match string_of(Some(v)) {
             Some(s)
-                if matches!(s, "user" | "number" | "conference" | "agent" | "anonymous") || pattern1().is_match(s) => {}
+                if matches!(s, "user" | "number" | "conference" | "agent" | "anonymous")
+                    || pattern1().is_match(s) => {}
             _ => return Err(fail(path, " is not an allowed value")),
         }
     }
@@ -1613,17 +1654,21 @@ fn pattern1() -> &'static Regex {
 
 fn pattern2() -> &'static Regex {
     static PATTERN: OnceLock<Regex> = OnceLock::new();
-    PATTERN.get_or_init(|| Regex::new(r#"^\+[1-9][0-9]{6,14}$"#).expect("a pattern of the protocol"))
+    PATTERN
+        .get_or_init(|| Regex::new(r#"^\+[1-9][0-9]{6,14}$"#).expect("a pattern of the protocol"))
 }
 
 fn pattern3() -> &'static Regex {
     static PATTERN: OnceLock<Regex> = OnceLock::new();
-    PATTERN.get_or_init(|| Regex::new(r#"^vsr_[A-Za-z0-9_-]+$"#).expect("a pattern of the protocol"))
+    PATTERN
+        .get_or_init(|| Regex::new(r#"^vsr_[A-Za-z0-9_-]+$"#).expect("a pattern of the protocol"))
 }
 
 fn pattern4() -> &'static Regex {
     static PATTERN: OnceLock<Regex> = OnceLock::new();
-    PATTERN.get_or_init(|| Regex::new(r#"^[0-9]+\.[0-9]+\.[0-9]+$"#).expect("a pattern of the protocol"))
+    PATTERN.get_or_init(|| {
+        Regex::new(r#"^[0-9]+\.[0-9]+\.[0-9]+$"#).expect("a pattern of the protocol")
+    })
 }
 
 fn pattern5() -> &'static Regex {
@@ -1633,12 +1678,14 @@ fn pattern5() -> &'static Regex {
 
 fn pattern6() -> &'static Regex {
     static PATTERN: OnceLock<Regex> = OnceLock::new();
-    PATTERN.get_or_init(|| Regex::new(r#"^call_[A-Za-z0-9-]+$"#).expect("a pattern of the protocol"))
+    PATTERN
+        .get_or_init(|| Regex::new(r#"^call_[A-Za-z0-9-]+$"#).expect("a pattern of the protocol"))
 }
 
 fn pattern7() -> &'static Regex {
     static PATTERN: OnceLock<Regex> = OnceLock::new();
-    PATTERN.get_or_init(|| Regex::new(r#"^agent_[A-Za-z0-9-]+$"#).expect("a pattern of the protocol"))
+    PATTERN
+        .get_or_init(|| Regex::new(r#"^agent_[A-Za-z0-9-]+$"#).expect("a pattern of the protocol"))
 }
 
 fn pattern8() -> &'static Regex {
