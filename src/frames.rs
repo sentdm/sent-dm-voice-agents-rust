@@ -538,7 +538,7 @@ pub fn session_types(frame_type: &str) -> Option<&'static [&'static str]> {
 /// The values Sent lists today; it may add more, so a runtime treats others as it would the fallback.
 pub const PARTY_KINDS: &[&str] = &["user", "number", "conference", "agent", "anonymous"];
 /// The values Sent lists today; it may add more, so a runtime treats others as it would the fallback.
-pub const SESSIONEND_REASONS: &[&str] = &[
+pub const SESSION_END_REASONS: &[&str] = &[
     "caller_hung_up",
     "agent_hung_up",
     "transferred",
