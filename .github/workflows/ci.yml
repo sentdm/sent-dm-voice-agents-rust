@@ -1,0 +1,43 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo build --locked
+      - run: cargo test --locked
+      - name: The crate packages
+        run: cargo package --locked --allow-dirty
+
+  conformance:
+    name: conformance
+    # The protocol's scenarios against this SDK's conformance agent, at the protocol tag the package implements.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: cargo build --locked --release --bin conformance
+      - uses: sentdm/sent-dm-voice-protocol@v0.2.0
+        with:
+          agent: ./target/release/conformance

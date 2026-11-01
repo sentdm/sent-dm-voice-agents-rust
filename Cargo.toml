@@ -1,0 +1,30 @@
+[package]
+name = "sentdm-voice-agents"
+version = "0.0.0"
+edition = "2021"
+rust-version = "1.85"
+description = "Sent Voice Agents for Rust: an AI agent that takes and places phone calls through Sent"
+license = "Apache-2.0"
+repository = "https://github.com/sentdm/sent-dm-voice-agents-rust"
+homepage = "https://docs.sent.dm"
+documentation = "https://docs.rs/sentdm-voice-agents"
+readme = "README.md"
+keywords = ["sent", "voice", "agents", "calls", "websocket"]
+categories = ["api-bindings", "asynchronous"]
+include = ["src/**", "Cargo.toml", "README.md", "LICENSE"]
+
+[dependencies]
+futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
+regex = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "signal"] }
+tokio-tungstenite = { version = "0.26", features = ["rustls-tls-webpki-roots"] }
+tracing = "0.1"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["test-util"] }
+
+[[bin]]
+name = "conformance"
+path = "src/bin/conformance.rs"

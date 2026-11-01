@@ -1,0 +1,81 @@
+# Runs when release-please publishes a release, and by hand to publish again if a run failed. By hand with
+# `dry_run`, it packages the crate and exchanges the job's OIDC token with crates.io, which checks the trusted
+# publisher without publishing. A hand publish runs on the release tag, never on a branch: `gh workflow run
+# publish-crates.yml --ref v<version>`.
+#
+# crates.io attaches a trusted publisher only to a crate that already exists, so the crate's first version is
+# published with a short-lived CARGO_REGISTRY_TOKEN repository secret (a crates.io API token with the
+# publish-new scope, from a crate owner). Set the secret, dispatch this workflow, then on crates.io add a trusted
+# publisher to the crate (repository owner sentdm, repository sent-dm-voice-agents-rust, workflow
+# publish-crates.yml, environment blank), delete the secret and revoke the token. From then on the token is
+# absent and rust-lang/crates-io-auth-action exchanges this job's OIDC token for a 30-minute one.
+name: Publish crates.io
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Package the crate and exchange the OIDC token with crates.io, then stop, to check the trusted publisher without publishing
+        type: boolean
+        default: false
+  release:
+    types: [published]
+
+concurrency:
+  # A dry run never queues behind, or displaces, a real publish.
+  group: publish-crates${{ inputs.dry_run && '-dry-run' || '' }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      # The first-publish token, while it exists, takes the place of the OIDC exchange.
+      HAS_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - name: The version to publish
+        # 0.0.0 is the template's placeholder: the repository has no release yet. A hand run publishes the
+        # release tag whose version Cargo.toml carries, so main's later commits never ship under an old number.
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          version="$(sed -n 's/^version = "\([^"]*\)".*/\1/p' Cargo.toml | head -1)"
+          echo "version=$version"
+          [ "$DRY_RUN" = "true" ] && exit 0
+          if [ "$version" = "0.0.0" ]; then
+            echo "no release yet: Cargo.toml still carries 0.0.0" >&2
+            exit 1
+          fi
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && { [ "$GITHUB_REF_TYPE" != "tag" ] || [ "$GITHUB_REF_NAME" != "v$version" ]; }; then
+            echo "a hand run publishes the release tag: gh workflow run publish-crates.yml --ref v$version" >&2
+            exit 1
+          fi
+      - name: Package
+        run: cargo package --locked
+      - name: Exchange the job's OIDC token for a crates.io token
+        # Pinned to a commit: this action receives the job's OIDC token and hands back the token that publishes.
+        # Skipped while the first-publish CARGO_REGISTRY_TOKEN is set.
+        if: ${{ env.HAS_TOKEN != 'true' }}
+        id: auth
+        uses: rust-lang/crates-io-auth-action@v1
+      - name: The trusted publisher answered
+        if: ${{ inputs.dry_run }}
+        run: echo "crates.io exchanged the token; the trusted publisher matches this repository and workflow, and the crate packages"
+      - name: Publish to crates.io
+        if: ${{ !inputs.dry_run }}
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN || steps.auth.outputs.token }}
+        run: |
+          version="$(sed -n 's/^version = "\([^"]*\)".*/\1/p' Cargo.toml | head -1)"
+          if cargo info "sentdm-voice-agents@$version" >/dev/null 2>&1; then
+            echo "sentdm-voice-agents $version is already published"
+            exit 0
+          fi
+          cargo publish --locked --no-verify

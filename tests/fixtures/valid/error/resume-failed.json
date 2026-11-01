@@ -1,0 +1,9 @@
+{
+  "type": "error",
+  "error": {
+    "code": "resume_failed",
+    "message": "The session can no longer be resumed."
+  },
+  "session_id": "vs_7Hq2Lm9xQa",
+  "frame_type": "session.resume"
+}

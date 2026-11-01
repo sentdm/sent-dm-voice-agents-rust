@@ -1,0 +1,10 @@
+{
+  "type": "tool.result",
+  "session_id": "vs_7Hq2Lm9xQa",
+  "call_ref": "t1",
+  "ok": false,
+  "error": {
+    "code": "target_not_allowed",
+    "message": "The agent may not transfer to this number."
+  }
+}
