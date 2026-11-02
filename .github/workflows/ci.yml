@@ -38,6 +38,6 @@ jobs:
         with:
           node-version: '22'
       - run: cargo build --locked --release --bin conformance
-      - uses: sentdm/sent-dm-voice-protocol@v0.2.0
+      - uses: sentdm/sent-dm-voice-protocol@v1.0.0
         with:
           agent: ./target/release/conformance

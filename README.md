@@ -1,10 +1,10 @@
 # Sent Voice Agents for Rust
 
 An AI agent that takes and places phone calls through [Sent](https://sent.dm), on the
-[Sent Voice Agents protocol](https://github.com/sentdm/sent-dm-voice-protocol) 0.2.0, on Tokio.
+[Sent Voice Agents protocol](https://github.com/sentdm/sent-dm-voice-protocol) 1.0.0, on Tokio.
 
 Status: Preview, with the protocol. Generated and rendered by `sent-dm-sdk-pipeline` from the protocol at
-`v0.2.0`; every release passes the protocol's conformance scenarios in CI.
+`v1.0.0`; every release passes the protocol's conformance scenarios in CI.
 
 Read the [Voice Agents docs](https://docs.sent.dm) to get started.
 
