@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/sentdm/sent-dm-voice-agents-rust/compare/v0.1.0...v0.2.0) (2026-11-02)
+
+
+### Features
+
+* **protocol:** protocol v1.0.0 ([7a40ac9](https://github.com/sentdm/sent-dm-voice-agents-rust/commit/7a40ac92a0249ad737b3c7e6406b408b0189eb03))
+
 ## 0.1.0 (2026-11-01)
 
 
